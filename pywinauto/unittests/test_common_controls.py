@@ -18,38 +18,45 @@
 #    Suite 330,
 #    Boston, MA 02111-1307 USA
 
+from __future__ import print_function
+
 "Tests for classes in controls\common_controls.py"
 
 __revision__ = "$Revision: 234 $"
 
 import sys
-sys.path.append(".")
-from pywinauto.controls import common_controls
-from pywinauto.controls.common_controls import *
-from pywinauto.win32structures import RECT
-from pywinauto.controls import WrapHandle
-#from pywinauto.controls.HwndWrapper import HwndWrapper
-from pywinauto import findbestmatch
-
 import ctypes
-
 import unittest
 import time
 import pprint
 import pdb
+import os
 
-controlspy_folder = r"C:\_projects\py_pywinauto\controlspy0798\\"
+sys.path.append(".")
+from pywinauto import six
+from pywinauto.controls import common_controls
+from pywinauto.controls.common_controls import *
+from pywinauto.win32structures import RECT
+from pywinauto.controls import WrapHandle
+from pywinauto.controls.HwndWrapper import HwndWrapper
+from pywinauto import findbestmatch
+from pywinauto.sysinfo import is_x64_Python
+from pywinauto.RemoteMemoryBlock import AccessDenied
+from pywinauto.RemoteMemoryBlock import RemoteMemoryBlock
+from mock import Mock
+
+controlspy_folder = os.path.join(
+   os.path.dirname(__file__), "..\..\controlspy0998")
+if is_x64_Python():
+    controlspy_folder = os.path.join(controlspy_folder, 'x64')
 
 
 class RemoteMemoryBlockTestCases(unittest.TestCase):
     def test__init__fail(self):
-        self.assertRaises(AccessDenied, common_controls._RemoteMemoryBlock, 0)
+        self.assertRaises(AccessDenied, RemoteMemoryBlock, 0)
 
     def test__init__fail(self):
-        self.assertRaises(AccessDenied, common_controls._RemoteMemoryBlock, 0)
-
-
-
+        self.assertRaises(AccessDenied, RemoteMemoryBlock, 0)
 
 
 class ListViewTestCases(unittest.TestCase):
@@ -62,7 +69,9 @@ class ListViewTestCases(unittest.TestCase):
         # start the application
         from pywinauto.application import Application
         app = Application()
-        app.start_(controlspy_folder + "List View.exe")
+        app_path = os.path.join(controlspy_folder, "List View.exe")
+        app.start_(app_path)
+        #print('app_path: ' + app_path)
 
         self.texts = [
             ("Mercury", '57,910,000', '4,880', '3.30e23'),
@@ -159,7 +168,7 @@ class ListViewTestCases(unittest.TestCase):
 
         # TODO: add more checking of column values
         #for col in cols:
-        #    print col
+        #    print(col)
 
 
     def testGetSelectionCount(self):
@@ -200,19 +209,19 @@ class ListViewTestCases(unittest.TestCase):
     def _testFocused(self):
         "Test checking the focus of some ListView items"
 
-        print "Select something quick!!"
+        print("Select something quick!!")
         import time
         time.sleep(3)
         #self.ctrl.Select(1)
 
-        print self.ctrl.IsFocused(0)
-        print self.ctrl.IsFocused(1)
-        print self.ctrl.IsFocused(2)
-        print self.ctrl.IsFocused(3)
-        print self.ctrl.IsFocused(4)
-        print self.ctrl.IsFocused(5)
+        print(self.ctrl.IsFocused(0))
+        print(self.ctrl.IsFocused(1))
+        print(self.ctrl.IsFocused(2))
+        print(self.ctrl.IsFocused(3))
+        print(self.ctrl.IsFocused(4))
+        print(self.ctrl.IsFocused(5))
         #for col in cols:
-        #    print col
+        #    print(col)
 
 
     def testSelect(self):
@@ -307,7 +316,7 @@ class TreeViewTestCases(unittest.TestCase):
         # start the application
         from pywinauto.application import Application
         app = Application()
-        app.start_(controlspy_folder + "Tree View.exe")
+        app.start_(os.path.join(controlspy_folder, "Tree View.exe"))
 
         self.root_text = "The Planets"
         self.texts = [
@@ -408,7 +417,38 @@ class TreeViewTestCases(unittest.TestCase):
         for prop_name in props:
             self.assertEquals(getattr(self.ctrl, prop_name)(), props[prop_name])
 
-
+    def testItemsClick(self):
+        "Test clicking of items and sub-items in the treeview control"
+        planets_item_path = (0, 0)
+        mercury_diam_item_path = (0, 0, 1)
+        mars_dist_item_path = (0, 3, 0)
+        
+        itm = self.ctrl.GetItem(planets_item_path)
+        itm.EnsureVisible()
+        time.sleep(1)
+        itm.Click(button='left')
+        self.assertEquals(True, self.ctrl.IsSelected(planets_item_path))
+        
+        itm = self.ctrl.GetItem(mars_dist_item_path)
+        itm.EnsureVisible()
+        time.sleep(1)
+        itm.Click(button='left')
+        self.assertEquals(True, self.ctrl.IsSelected(mars_dist_item_path))
+        
+        itm = self.ctrl.GetItem(mercury_diam_item_path)
+        itm.EnsureVisible()
+        time.sleep(1)
+        itm.Click(button='left')
+        self.assertEquals(True, self.ctrl.IsSelected(mercury_diam_item_path))
+        self.assertEquals(False, self.ctrl.IsSelected(mars_dist_item_path))
+        
+        itm = self.ctrl.GetItem(planets_item_path)
+        itm.EnsureVisible()
+        time.sleep(1)
+        itm.Click(button='left')
+        self.assertEquals(True, self.ctrl.IsSelected(planets_item_path))
+        self.assertEquals(False, self.ctrl.IsSelected(mercury_diam_item_path))
+        
 class HeaderTestCases(unittest.TestCase):
     "Unit tests for the Header class"
 
@@ -419,13 +459,13 @@ class HeaderTestCases(unittest.TestCase):
         # start the application
         from pywinauto.application import Application
         app = Application()
-        app.start_(controlspy_folder + "Header.exe")
+        app.start_(os.path.join(controlspy_folder, "Header.exe"))
 
         self.texts = [u'Distance', u'Diameter', u'Mass']
         self.item_rects = [
-            RECT(0, 0, 90, 21),
-            RECT(90, 0, 180, 21),
-            RECT(180, 0, 260, 21)]
+            RECT(0, 0, 90, 26),
+            RECT(90, 0, 180, 26),
+            RECT(180, 0, 260, 26)]
         self.app = app
         self.dlg = app.MicrosoftControlSpy
         self.ctrl = app.MicrosoftControlSpy.Header.WrapperObject()
@@ -493,13 +533,13 @@ class StatusBarTestCases(unittest.TestCase):
         # start the application
         from pywinauto.application import Application
         app = Application()
-        app.start_(controlspy_folder + "Status bar.exe")
+        app.start_(os.path.join(controlspy_folder, "Status bar.exe"))
 
         self.texts = ["Long text", "", "Status Bar"]
         self.part_rects = [
             RECT(0, 2, 65, 20),
             RECT(67, 2, 90, 20),
-            RECT(92, 2, 264, 20)]
+            RECT(92, 2, 357, 20)]
         self.app = app
         self.dlg = app.MicrosoftControlSpy
         self.ctrl = app.MicrosoftControlSpy.StatusBar.WrapperObject()
@@ -597,7 +637,7 @@ class TabControlTestCases(unittest.TestCase):
         # start the application
         from pywinauto.application import Application
         app = Application()
-        app.start_(controlspy_folder + "Tab.exe")
+        app.start_(os.path.join(controlspy_folder, "Tab.exe"))
 
         self.texts = [
             "Pluto", "Neptune", "Uranus",
@@ -605,16 +645,16 @@ class TabControlTestCases(unittest.TestCase):
             "Earth", "Venus", "Mercury", "Sun"]
 
         self.rects = [
-            RECT(2,2,80,21),
-            RECT(80,2,174,21),
-            RECT(174,2,261,21),
-            RECT(2,21,91,40),
-            RECT(91,21,180,40),
-            RECT(180,21,261,40),
-            RECT(2,40,64,59),
-            RECT(64,40,131,59),
-            RECT(131,40,206,59),
-            RECT(206,40,261,59),
+            RECT(2,2,63,21),
+            RECT(63,2,141,21),
+            RECT(141,2,212,21),
+            RECT(212,2,280,21),
+            RECT(280,2,348,21),
+            RECT(2,21,68,40),
+            RECT(68,21,135,40),
+            RECT(135,21,207,40),
+            RECT(207,21,287,40),
+            RECT(287,21,348,40),
         ]
 
         self.app = app
@@ -656,7 +696,7 @@ class TabControlTestCases(unittest.TestCase):
             self.assertEquals(getattr(self.ctrl, prop_name)(), props[prop_name])
 
     def testRowCount(self):
-        self.assertEquals(3, self.ctrl.RowCount())
+        self.assertEquals(2, self.ctrl.RowCount())
 
     def testGetSelectedTab(self):
         self.assertEquals(6, self.ctrl.GetSelectedTab())
@@ -686,12 +726,12 @@ class TabControlTestCases(unittest.TestCase):
 #        # use CloseClick to allow the control time to respond to the message
 #        self.dlg.Send.CloseClick()
 #        time.sleep(2)
-#        print "==\n",self.ctrl.TabStates()
+#        print("==\n",self.ctrl.TabStates())
 #
 #        self.assertEquals (self.ctrl.GetTabState(1), 1)
 #
 #    def testTabStates(self):
-#        print self.ctrl.TabStates()
+#        print(self.ctrl.TabStates())
 #        raise "tabstates hiay"
 
 
@@ -730,7 +770,7 @@ class ToolbarTestCases(unittest.TestCase):
         # start the application
         from pywinauto.application import Application
         app = Application()
-        app.start_(controlspy_folder + "toolbar.exe")
+        app.start_(os.path.join(controlspy_folder, "toolbar.exe"))
 
         self.app = app
         self.dlg = app.MicrosoftControlSpy
@@ -756,7 +796,7 @@ class ToolbarTestCases(unittest.TestCase):
     def testTexts(self):
         "Make sure the texts are set correctly"
         for txt in self.ctrl.Texts():
-            self.assertEquals (isinstance(txt, basestring), True)
+            self.assertEquals (isinstance(txt, six.string_types), True)
 
     def testGetProperties(self):
         "Test getting the properties for the toolbar control"
@@ -793,7 +833,7 @@ class ToolbarTestCases(unittest.TestCase):
 
         self.ctrl.PressButton(0)
 
-        #print self.ctrl.Texts()
+        #print(self.ctrl.Texts())
         self.assertRaises(
             findbestmatch.MatchError,
             self.ctrl.PressButton,
@@ -814,7 +854,7 @@ class RebarTestCases(unittest.TestCase):
         # start the application
         from pywinauto.application import Application
         app = Application()
-        app.start_(controlspy_folder + "rebar.exe")
+        app.start_(os.path.join(controlspy_folder, "rebar.exe"))
 
         self.app = app
         self.dlg = app.MicrosoftControlSpy
@@ -840,7 +880,7 @@ class RebarTestCases(unittest.TestCase):
     def testTexts(self):
         "Make sure the texts are set correctly"
         for txt in self.ctrl.Texts():
-            self.assertEquals (isinstance(txt, basestring), True)
+            self.assertEquals (isinstance(txt, six.string_types), True)
 
     def testBandCount(self):
         self.assertEquals(self.ctrl.BandCount(), 2)
@@ -873,7 +913,7 @@ class ToolTipsTestCases(unittest.TestCase):
         # start the application
         from pywinauto.application import Application
         app = Application()
-        app.start_(controlspy_folder + "Tooltip.exe")
+        app.start_(os.path.join(controlspy_folder, "Tooltip.exe"))
 
         self.app = app
         self.dlg = app.MicrosoftControlSpy
@@ -899,7 +939,7 @@ class ToolTipsTestCases(unittest.TestCase):
     def tearDown(self):
         "Close the application after tests"
         # close the application
-        self.dlg.SendMessage(win32defines.WM_CLOSE)
+        self.app.kill_()
 
     def testFriendlyClass(self):
         "Make sure the friendly class is set correctly"
@@ -949,7 +989,7 @@ class UpDownTestCases(unittest.TestCase):
         # start the application
         from pywinauto.application import Application
         app = Application()
-        app.start_(controlspy_folder + "Up-Down.exe")
+        app.start_(os.path.join(controlspy_folder,  "Up-Down.exe"))
 
         self.app = app
         self.dlg = app.MicrosoftControlSpy
@@ -1036,9 +1076,71 @@ class UpDownTestCases(unittest.TestCase):
         self.ctrl.Decrement()
         self.assertEquals (self.ctrl.GetValue(), 22)
 
+class TreeViewElementTestCases(unittest.TestCase):
+    "Unit tests for the UpDownWrapper class"
 
+    def setUp(self):
+        """Start the application set some data and ensure the application
+        is in the state we want it."""
 
+        # start the application
+        from pywinauto.application import Application
+        app = Application()
+        app.start_(os.path.join(controlspy_folder,  "Up-Down.exe"))
 
+        self.app = app
+        self.dlg = app.MicrosoftControlSpy
+        self.ctrl = app.MicrosoftControlSpy.UpDown2.WrapperObject()
+
+        mockElem = Mock (spec = Object)
+        mockCtrlElem = Mock (spec = HwndWrapper.HwndWrapper)
+
+        #self.dlg.MenuSelect("Styles")
+
+        # select show selection always, and show checkboxes
+        #app.ControlStyles.ListBox1.TypeKeys(
+        #    "{HOME}{SPACE}" + "{DOWN}"* 12 + "{SPACE}")
+        #self.app.ControlStyles.ApplyStylesSetWindowLong.Click()
+        #self.app.ControlStyles.SendMessage(win32defines.WM_CLOSE)
+
+    def tearDown(self):
+        "Close the application after tests"
+        # close the application
+        self.dlg.SendMessage(win32defines.WM_CLOSE)
+
+    def testFriendlyClass(self):
+        "Make sure the friendly class is set correctly"
+        self.assertEquals (self.ctrl.FriendlyClassName(), "UpDown")
+
+    def testClickButton(self):
+        tree_view_element_under_test = _treeview_element(mockElem, mockCtrlElem)
+        tree_view_element_under_test.Click(where = "button")
+        self.assertTrue(tree_view_element_under_test.found)
+        
+    def testClickIcon(self):
+        tree_view_element_under_test = _treeview_element(mockElem, mockCtrlElem)
+        tree_view_element_under_test.Click(where = "icon")
+        self.assertTrue(tree_view_element_under_test.found)
+        
+    def testClickCheck(self):
+        tree_view_element_under_test = _treeview_element(mockElem, mockCtrlElem)
+        tree_view_element_under_test.Click(where = "check")
+        self.assertTrue(tree_view_element_under_test.found)
+        
+    def testClickInputButton(self):
+        tree_view_element_under_test = _treeview_element(mockElem, mockCtrlElem)
+        tree_view_element_under_test.ClickInput(where = "button")
+        self.assertTrue(tree_view_element_under_test.found)
+        
+    def testClickInputIcon(self):
+        tree_view_element_under_test = _treeview_element(mockElem, mockCtrlElem)
+        tree_view_element_under_test.ClickInput(where = "icon")
+        self.assertTrue(tree_view_element_under_test.found)
+        
+    def testClickInputCheck(self):
+        tree_view_element_under_test = _treeview_element(mockElem, mockCtrlElem)
+        tree_view_element_under_test.ClickInput(where = "check")
+        self.assertTrue(tree_view_element_under_test.found)
 
 if __name__ == "__main__":
     unittest.main()
